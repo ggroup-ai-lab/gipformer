@@ -15,6 +15,12 @@ dependencies = [
     "numpy>=1.20.0",
     "soundfile>=0.12.0",
     "sherpa-onnx>=1.10.0",
+    # sherpa-onnx >=1.13 splits its native libs (incl. libonnxruntime.so) into a
+    # separate `sherpa-onnx-core` package. That dependency is declared as a
+    # `Dynamic` field in the wheel metadata, so uv does not pick it up during
+    # resolution — without it `import sherpa_onnx` fails with
+    # "libonnxruntime.so: cannot open shared object file". Pin it explicitly.
+    "sherpa-onnx-core>=1.10.0",
 ]
 
 [project.optional-dependencies]

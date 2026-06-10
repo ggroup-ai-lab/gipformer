@@ -11,6 +11,8 @@ Usage:
 """
 
 import argparse
+import importlib.abc
+import importlib.util
 import math
 import os
 import subprocess
@@ -64,24 +66,31 @@ class _MockModule(types.ModuleType):
         return self._Dummy
 
 
-class _LhotseFinder:
-    """Import hook that provides mock lhotse modules."""
+class _LhotseFinder(importlib.abc.MetaPathFinder, importlib.abc.Loader):
+    """Import hook that provides mock lhotse modules.
 
-    def find_module(self, fullname, path=None):
+    lhotse is a training-only dependency; inference never touches it. Rather
+    than require the heavy package, we satisfy icefall's `import lhotse...`
+    with dummy modules.
+
+    Uses the find_spec / exec_module protocol — the legacy find_module /
+    load_module API was removed in Python 3.12.
+    """
+
+    def find_spec(self, fullname, path=None, target=None):
         if fullname == "lhotse" or fullname.startswith("lhotse."):
-            return self
+            return importlib.util.spec_from_loader(fullname, self, is_package=True)
         return None
 
-    def load_module(self, fullname):
-        if fullname in sys.modules:
-            return sys.modules[fullname]
-        mod = _MockModule(fullname)
+    def create_module(self, spec):
+        mod = _MockModule(spec.name)
         mod.__path__ = []
-        mod.__loader__ = self
         mod.__file__ = "<mocked>"
         mod.__version__ = "0.0.0"
-        sys.modules[fullname] = mod
         return mod
+
+    def exec_module(self, module):
+        pass
 
 
 # ── Setup ────────────────────────────────────────────────────────────────────

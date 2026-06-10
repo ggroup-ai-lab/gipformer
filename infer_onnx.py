@@ -17,9 +17,13 @@ import soundfile as sf
 
 try:
     import sherpa_onnx
-except ImportError:
-    print("Error: sherpa-onnx is not installed.")
-    print("Install it with: pip install sherpa-onnx")
+except ImportError as e:
+    print(f"Error: could not import sherpa-onnx ({e}).")
+    print("Install it with: pip install sherpa-onnx sherpa-onnx-core")
+    print(
+        "Note: as of sherpa-onnx 1.13, the native libs (libonnxruntime.so) live "
+        "in the separate 'sherpa-onnx-core' package — both must be installed."
+    )
     sys.exit(1)
 
 try:

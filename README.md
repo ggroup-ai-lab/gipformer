@@ -82,7 +82,12 @@ uv sync --extra pytorch
 ```
 
 `uv sync` creates an isolated `.venv` and installs the pinned dependencies from
-`pyproject.toml` / `uv.lock`. Prefix commands with `uv run` to use that env.
+`pyproject.toml` / `uv.lock`. **Activate it once**, then run `python ...`
+directly — all examples below assume an activated venv:
+
+```bash
+source .venv/bin/activate          # Linux / macOS
+```
 
 > **Apple Silicon note:** on macOS (M-series), `import sherpa_onnx` may fail with
 > `Library not loaded: @rpath/libonnxruntime…` — an upstream `sherpa-onnx` wheel
@@ -98,13 +103,13 @@ The simplest way to run the model. Supports CPU, GPU, mobile, and embedded devic
 
 ```bash
 # Full infer with fp32
-uv run python infer_onnx.py --audio data/audio1.wav
+python infer_onnx.py --audio data/audio1.wav
 
 # INT8 quantized (smaller & faster)
-uv run python infer_onnx.py --audio data/audio1.wav --quantize int8
+python infer_onnx.py --audio data/audio1.wav --quantize int8
 
 # Multiple files
-uv run python infer_onnx.py --audio data/audio1.wav data/audio2.wav data/audio3.wav
+python infer_onnx.py --audio data/audio1.wav data/audio2.wav data/audio3.wav
 ```
 
 ### PyTorch Inference (Advanced)
@@ -114,13 +119,13 @@ extra first with `uv sync --extra pytorch`.
 
 ```bash
 # Basic usage
-uv run python infer_pytorch.py --audio data/audio1.wav
+python infer_pytorch.py --audio data/audio1.wav
 
 # Use GPU
-uv run python infer_pytorch.py --audio data/audio1.wav --device cuda
+python infer_pytorch.py --audio data/audio1.wav --device cuda
 
 # Multiple files
-uv run python infer_pytorch.py --audio data/audio1.wav data/audio2.wav data/audio3.wav
+python infer_pytorch.py --audio data/audio1.wav data/audio2.wav data/audio3.wav
 ```
 
 > **Note:** On first run, the script automatically downloads the model (~280MB) and clones [icefall](https://github.com/k2-fsa/icefall) (~50MB) for model architecture code.
