@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# uv / virtualenvs
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+
+# Claude code
+.claude/
+
+# Hugging Face staging (deployed to separate HF repos, not tracked here)
+huggingface/
+
+uv.lock

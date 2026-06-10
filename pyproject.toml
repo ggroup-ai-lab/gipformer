@@ -1,0 +1,70 @@
+[project]
+name = "gipformer"
+version = "0.1.0"
+description = "Efficient Vietnamese speech recognition — 65M RNN-T (Zipformer Transducer)"
+readme = "README.md"
+requires-python = ">=3.9,<3.14"
+license = { text = "MIT" }
+authors = [{ name = "G-Group AI Lab" }]
+keywords = ["asr", "speech-recognition", "vietnamese", "rnnt", "zipformer", "onnx"]
+
+# Core — ONNX inference (cross-platform: CPU / GPU / mobile / embedded).
+# This is everything you need to run `infer_onnx.py`.
+dependencies = [
+    "huggingface-hub>=0.20.0",
+    "numpy>=1.20.0",
+    "soundfile>=0.12.0",
+    "sherpa-onnx>=1.10.0",
+]
+
+[project.optional-dependencies]
+# PyTorch / icefall path — research & fine-tuning (`infer_pytorch.py`).
+# The CUDA wheels below only exist for Linux x86_64, so they are marker-gated;
+# install with: `uv sync --extra pytorch` on a Linux + CUDA machine.
+pytorch = [
+    "torch==2.8.0 ; sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "torchaudio==2.8.0 ; sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "k2==1.24.4.dev20250807+cuda12.8.torch2.8.0 ; sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "kaldifeat==1.25.5.dev20250807+cuda12.8.torch2.8.0 ; sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sentencepiece==0.2.1",
+    "kaldialign",
+    "pypinyin==0.50.0",
+    "tensorboard",
+]
+
+[project.urls]
+Homepage = "https://huggingface.co/g-group-ai-lab/gipformer-65M-rnnt"
+Repository = "https://github.com/ggroup-ai-lab/gipformer"
+
+# --------------------------------------------------------------------------- #
+# uv configuration
+# --------------------------------------------------------------------------- #
+[tool.uv]
+# Scripts-only repo (no importable package to build/install) — just deps.
+package = false
+
+# Extra wheel indexes for the CUDA PyTorch stack. `explicit = true` means each
+# index is consulted ONLY for packages mapped to it in [tool.uv.sources], so it
+# never interferes with resolving the core dependencies from PyPI.
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "k2"
+url = "https://k2-fsa.github.io/k2/cuda.html"
+format = "flat"
+explicit = true
+
+[[tool.uv.index]]
+name = "kaldifeat"
+url = "https://csukuangfj.github.io/kaldifeat/cuda.html"
+format = "flat"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+torchaudio = { index = "pytorch-cu128" }
+k2 = { index = "k2" }
+kaldifeat = { index = "kaldifeat" }

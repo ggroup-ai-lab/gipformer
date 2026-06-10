@@ -3,7 +3,8 @@
 [![HuggingFace](https://img.shields.io/badge/HuggingFace-gipformer--65M--rnnt-blue)](https://huggingface.co/g-group-ai-lab/gipformer-65M-rnnt)
 [![ClawHub](https://img.shields.io/badge/ClawHub-gipformer-blue)](https://clawhub.ai/ai-ggroup/gipformer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Python 3.8+](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.9+](https://img.shields.io/badge/Python-3.9--3.13-blue.svg)](https://www.python.org/downloads/)
+[![uv](https://img.shields.io/badge/managed%20with-uv-de5fe9.svg)](https://github.com/astral-sh/uv)
 
 ## Highlights
 
@@ -68,14 +69,28 @@ Call center ASR is one of the most challenging real-world domains — noisy phon
 
 ## Quick Start
 
-### Installation
-
-> **Hardware:** All experiments were conducted on an NVIDIA RTX 4090.
+This project uses [**uv**](https://github.com/astral-sh/uv) for dependency
+management. Install uv first ([instructions](https://docs.astral.sh/uv/getting-started/installation/)),
+then:
 
 ```bash
-# Python 3.8+ required
-pip install -r requirements.txt
+# Core (ONNX inference) — works on every platform (CPU/GPU/mobile)
+uv sync
+
+# + PyTorch / icefall stack (research & fine-tuning) — Linux + CUDA only
+uv sync --extra pytorch
 ```
+
+`uv sync` creates an isolated `.venv` and installs the pinned dependencies from
+`pyproject.toml` / `uv.lock`. Prefix commands with `uv run` to use that env.
+
+> **Apple Silicon note:** on macOS (M-series), `import sherpa_onnx` may fail with
+> `Library not loaded: @rpath/libonnxruntime…` — an upstream `sherpa-onnx` wheel
+> packaging issue (the bundled ONNX Runtime dylib isn't placed where the extension
+> looks for it). ONNX inference works out of the box on Linux/Windows; for local
+> runs on macOS, use Linux or the Hugging Face Space (which runs on Linux).
+
+> **Hardware:** All experiments were conducted on an NVIDIA RTX 4090.
 
 ### ONNX Inference (Recommended)
 
@@ -83,28 +98,29 @@ The simplest way to run the model. Supports CPU, GPU, mobile, and embedded devic
 
 ```bash
 # Full infer with fp32
-python infer_onnx.py --audio data/audio1.wav
+uv run python infer_onnx.py --audio data/audio1.wav
 
 # INT8 quantized (smaller & faster)
-python infer_onnx.py --audio data/audio1.wav --quantize int8
+uv run python infer_onnx.py --audio data/audio1.wav --quantize int8
 
 # Multiple files
-python infer_onnx.py --audio data/audio1.wav data/audio2.wav data/audio3.wav
+uv run python infer_onnx.py --audio data/audio1.wav data/audio2.wav data/audio3.wav
 ```
 
 ### PyTorch Inference (Advanced)
 
-For research and fine-tuning. Requires CUDA toolkit and additional dependencies.
+For research and fine-tuning. Requires a Linux machine with CUDA. Install the
+extra first with `uv sync --extra pytorch`.
 
 ```bash
 # Basic usage
-python infer_pytorch.py --audio data/audio1.wav
+uv run python infer_pytorch.py --audio data/audio1.wav
 
 # Use GPU
-python infer_pytorch.py --audio data/audio1.wav --device cuda
+uv run python infer_pytorch.py --audio data/audio1.wav --device cuda
 
 # Multiple files
-python infer_pytorch.py --audio data/audio1.wav data/audio2.wav data/audio3.wav
+uv run python infer_pytorch.py --audio data/audio1.wav data/audio2.wav data/audio3.wav
 ```
 
 > **Note:** On first run, the script automatically downloads the model (~280MB) and clones [icefall](https://github.com/k2-fsa/icefall) (~50MB) for model architecture code.
