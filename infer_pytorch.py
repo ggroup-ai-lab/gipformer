@@ -6,6 +6,8 @@ Uses icefall/k2 for native PyTorch speech recognition.
 Usage:
     python infer_pytorch.py --audio data/audio1.wav
     python infer_pytorch.py --audio data/audio1.wav --device cuda
+    python infer_pytorch.py --audio data/audio1.wav --version 1
+    python infer_pytorch.py --audio data/audio1.wav --model-dir ./huggingface/gipformer1.5-65M-rnnt
     python infer_pytorch.py --audio file1.wav file2.wav
     python infer_pytorch.py --audio data/audio1.wav --decoding-method modified_beam_search
 """
@@ -34,13 +36,20 @@ except ImportError:
     print("Install it with: pip install huggingface_hub")
     sys.exit(1)
 
-REPO_ID = "g-group-ai-lab/gipformer-65M-rnnt"
+# HuggingFace repo per model version. Both repos use the same canonical
+# filenames (model.pt, bpe.model, tokens.txt).
+REPO_IDS = {
+    "1": "g-group-ai-lab/gipformer-65M-rnnt",
+    "1.5": "g-group-ai-lab/gipformer1.5-65M-rnnt",
+}
+DEFAULT_VERSION = "1.5"
+
 ICEFALL_REPO = "https://github.com/k2-fsa/icefall.git"
 SAMPLE_RATE = 16000
 DEFAULT_ICEFALL_DIR = Path.home() / ".cache" / "gipformer" / "icefall"
 
 PT_FILES = {
-    "checkpoint": "epoch-35-avg-6.pt",
+    "checkpoint": "model.pt",
     "bpe_model": "bpe.model",
     "tokens": "tokens.txt",
 }
@@ -140,12 +149,44 @@ def setup_icefall(icefall_dir: Path) -> None:
             sys.path.insert(0, p)
 
 
-def download_model() -> dict:
-    """Download PyTorch model files from HuggingFace."""
-    print(f"Downloading model from {REPO_ID}...")
-    paths = {}
-    for key, filename in PT_FILES.items():
-        paths[key] = hf_hub_download(repo_id=REPO_ID, filename=filename)
+def load_model_files(version: str = DEFAULT_VERSION, model_dir: str = None) -> dict:
+    """Resolve the PyTorch model files, downloading them from HuggingFace if needed.
+
+    Args:
+        version: Model version key, see REPO_IDS.
+        model_dir: Local directory holding the model files. When given, nothing
+            is downloaded and the files are read straight from disk.
+
+    Returns:
+        Dict with local paths to the checkpoint, bpe model, and tokens files.
+    """
+    if model_dir:
+        directory = Path(model_dir).expanduser()
+        if not directory.is_dir():
+            print(f"Error: model directory not found: {directory}")
+            sys.exit(1)
+
+        print(f"Loading model from {directory}...")
+        paths = {}
+        for key, filename in PT_FILES.items():
+            path = directory / filename
+            if not path.exists():
+                print(f"Error: missing '{filename}' in {directory}")
+                sys.exit(1)
+            paths[key] = str(path)
+        return paths
+
+    repo_id = REPO_IDS[version]
+    print(f"Downloading model from {repo_id}...")
+    try:
+        paths = {
+            key: hf_hub_download(repo_id=repo_id, filename=filename)
+            for key, filename in PT_FILES.items()
+        }
+    except Exception as e:
+        print(f"Error: could not fetch the model from {repo_id} ({e}).")
+        print("Pass --model-dir to load the model from a local directory instead.")
+        sys.exit(1)
     print("Model downloaded successfully.")
     return paths
 
@@ -180,6 +221,8 @@ def main():
         epilog="Examples:\n"
         "  python infer_pytorch.py --audio data/audio1.wav\n"
         "  python infer_pytorch.py --audio data/audio1.wav --device cuda\n"
+        "  python infer_pytorch.py --audio data/audio1.wav --version 1\n"
+        "  python infer_pytorch.py --audio data/audio1.wav --model-dir ./local/model\n"
         "  python infer_pytorch.py --audio f1.wav f2.wav\n",
     )
     parser.add_argument(
@@ -188,6 +231,19 @@ def main():
         nargs="+",
         required=True,
         help="Path(s) to audio file(s) to transcribe",
+    )
+    parser.add_argument(
+        "--version",
+        type=str,
+        choices=sorted(REPO_IDS),
+        default=DEFAULT_VERSION,
+        help=f"Gipformer model version (default: {DEFAULT_VERSION})",
+    )
+    parser.add_argument(
+        "--model-dir",
+        type=str,
+        default=None,
+        help="Load the model from a local directory instead of HuggingFace",
     )
     parser.add_argument(
         "--device",
@@ -234,8 +290,8 @@ def main():
         os.environ["GIT_DIR"] = old_git_dir
     params.update(vars(args))
 
-    # Download model files
-    model_paths = download_model()
+    # Resolve model files
+    model_paths = load_model_files(args.version, args.model_dir)
 
     # Token table (for blank_id and vocab_size)
     token_table = k2.SymbolTable.from_file(model_paths["tokens"])

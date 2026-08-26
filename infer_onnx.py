@@ -4,14 +4,17 @@ Gipformer ONNX Inference - Vietnamese ASR
 Uses sherpa-onnx for fast, cross-platform speech recognition.
 
 Usage:
-    python infer_onnx.py --audio data/audio.wav
-    python infer_onnx.py --audio data/audio.wav --quantize int8
+    python infer_onnx.py --audio data/audio1.wav
+    python infer_onnx.py --audio data/audio1.wav --quantize int8
+    python infer_onnx.py --audio data/audio1.wav --version 1
+    python infer_onnx.py --audio data/audio1.wav --model-dir ./huggingface/gipformer1.5-65M-rnnt
     python infer_onnx.py --audio file1.wav file2.wav --num-threads 4
 """
 
 import argparse
 import sys
 import time
+from pathlib import Path
 
 import soundfile as sf
 
@@ -33,41 +36,79 @@ except ImportError:
     print("Install it with: pip install huggingface_hub")
     sys.exit(1)
 
-REPO_ID = "g-group-ai-lab/gipformer-65M-rnnt"
+# HuggingFace repo per model version. Both repos use the same canonical
+# filenames (encoder.onnx, decoder.onnx, joiner.onnx, tokens.txt, ...).
+REPO_IDS = {
+    "1": "g-group-ai-lab/gipformer-65M-rnnt",
+    "1.5": "g-group-ai-lab/gipformer1.5-65M-rnnt",
+}
+DEFAULT_VERSION = "1.5"
+
 SAMPLE_RATE = 16000
 FEATURE_DIM = 80
 
 ONNX_FILES = {
     "fp32": {
-        "encoder": "encoder-epoch-35-avg-6.onnx",
-        "decoder": "decoder-epoch-35-avg-6.onnx",
-        "joiner": "joiner-epoch-35-avg-6.onnx",
+        "encoder": "encoder.onnx",
+        "decoder": "decoder.onnx",
+        "joiner": "joiner.onnx",
     },
     "int8": {
-        "encoder": "encoder-epoch-35-avg-6.int8.onnx",
-        "decoder": "decoder-epoch-35-avg-6.int8.onnx",
-        "joiner": "joiner-epoch-35-avg-6.int8.onnx",
+        "encoder": "encoder.int8.onnx",
+        "decoder": "decoder.int8.onnx",
+        "joiner": "joiner.int8.onnx",
     },
 }
 
+TOKENS_FILE = "tokens.txt"
 
-def download_model(quantize: str = "int8") -> dict:
-    """Download ONNX model files from HuggingFace.
+
+def load_model(
+    quantize: str = "int8",
+    version: str = DEFAULT_VERSION,
+    model_dir: str = None,
+) -> dict:
+    """Resolve the ONNX model files, downloading them from HuggingFace if needed.
 
     Args:
         quantize: "fp32" for full precision, "int8" for quantized (smaller, faster).
+        version: Model version key, see REPO_IDS.
+        model_dir: Local directory holding the model files. When given, nothing
+            is downloaded and the files are read straight from disk.
 
     Returns:
         Dict with local paths to encoder, decoder, joiner, and tokens files.
     """
-    files = ONNX_FILES[quantize]
-    print(f"Downloading {quantize} model from {REPO_ID}...")
+    filenames = dict(ONNX_FILES[quantize], tokens=TOKENS_FILE)
 
-    paths = {}
-    for key, filename in files.items():
-        paths[key] = hf_hub_download(repo_id=REPO_ID, filename=filename)
+    if model_dir:
+        directory = Path(model_dir).expanduser()
+        if not directory.is_dir():
+            print(f"Error: model directory not found: {directory}")
+            sys.exit(1)
 
-    paths["tokens"] = hf_hub_download(repo_id=REPO_ID, filename="tokens.txt")
+        print(f"Loading {quantize} model from {directory}...")
+        paths = {}
+        for key, filename in filenames.items():
+            path = directory / filename
+            if not path.exists():
+                print(f"Error: missing '{filename}' in {directory}")
+                sys.exit(1)
+            paths[key] = str(path)
+        return paths
+
+    repo_id = REPO_IDS[version]
+    print(f"Downloading {quantize} model from {repo_id}...")
+
+    try:
+        paths = {
+            key: hf_hub_download(repo_id=repo_id, filename=filename)
+            for key, filename in filenames.items()
+        }
+    except Exception as e:
+        print(f"Error: could not fetch the model from {repo_id} ({e}).")
+        print("Pass --model-dir to load the model from a local directory instead.")
+        sys.exit(1)
 
     print("Model downloaded successfully.")
     return paths
@@ -124,8 +165,10 @@ def main():
         description="Gipformer ONNX Inference - Vietnamese ASR",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="Examples:\n"
-        "  python infer_onnx.py --audio data/audio.wav\n"
-        "  python infer_onnx.py --audio data/audio.wav --quantize fp32\n"
+        "  python infer_onnx.py --audio data/audio1.wav\n"
+        "  python infer_onnx.py --audio data/audio1.wav --quantize fp32\n"
+        "  python infer_onnx.py --audio data/audio1.wav --version 1\n"
+        "  python infer_onnx.py --audio data/audio1.wav --model-dir ./local/model\n"
         "  python infer_onnx.py --audio f1.wav f2.wav --num-threads 4\n",
     )
     parser.add_argument(
@@ -134,6 +177,19 @@ def main():
         nargs="+",
         required=True,
         help="Path(s) to audio file(s) to transcribe",
+    )
+    parser.add_argument(
+        "--version",
+        type=str,
+        choices=sorted(REPO_IDS),
+        default=DEFAULT_VERSION,
+        help=f"Gipformer model version (default: {DEFAULT_VERSION})",
+    )
+    parser.add_argument(
+        "--model-dir",
+        type=str,
+        default=None,
+        help="Load the model from a local directory instead of HuggingFace",
     )
     parser.add_argument(
         "--quantize",
@@ -157,8 +213,8 @@ def main():
     )
     args = parser.parse_args()
 
-    # Download model
-    model_paths = download_model(args.quantize)
+    # Resolve model files
+    model_paths = load_model(args.quantize, args.version, args.model_dir)
 
     # Create recognizer
     recognizer = create_recognizer(
