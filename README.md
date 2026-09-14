@@ -19,7 +19,7 @@
 
 Lower is better; **bold** = best in each column.
 
-> **Normalization:** Both predictions and labels are normalized before computing WER — lowercased, diacritics removed, and numbers converted to spoken form.
+> **Normalization:** Both predictions and labels are normalized before computing WER — lowercased, punctuation removed, and numbers converted to spoken form.
 
 | Model | Params | tele-medium | tele-hard-north | tele-hard-middle | tele-hard-south | vi-asr-tech | vi-asr-edu | vi-asr-finance | vi-asr-pubadmin | vivos | Common-Voice | vlsp-t1 | VietMed | MultiMED | LSVSC | Fleurs | ViMD |
 |:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
