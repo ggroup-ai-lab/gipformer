@@ -7,7 +7,7 @@ Usage:
     python infer_pytorch.py --audio data/audio1.wav
     python infer_pytorch.py --audio data/audio1.wav --device cuda
     python infer_pytorch.py --audio data/audio1.wav --version 1
-    python infer_pytorch.py --audio data/audio1.wav --model-dir ./huggingface/gipformer1.5-65M-rnnt
+    python infer_pytorch.py --audio data/audio1.wav --model-dir ./huggingface/gipformer1.5-68M-rnnt
     python infer_pytorch.py --audio file1.wav file2.wav
     python infer_pytorch.py --audio data/audio1.wav --decoding-method modified_beam_search
 """
@@ -39,8 +39,8 @@ except ImportError:
 # HuggingFace repo per model version. Both repos use the same canonical
 # filenames (model.pt, bpe.model, tokens.txt).
 REPO_IDS = {
-    "1": "g-group-ai-lab/gipformer-65M-rnnt",
-    "1.5": "g-group-ai-lab/gipformer1.5-65M-rnnt",
+    "1": "g-group-ai-lab/gipformer-68M-rnnt",
+    "1.5": "g-group-ai-lab/gipformer1.5-68M-rnnt",
 }
 DEFAULT_VERSION = "1.5"
 

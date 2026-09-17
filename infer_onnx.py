@@ -7,7 +7,7 @@ Usage:
     python infer_onnx.py --audio data/audio1.wav
     python infer_onnx.py --audio data/audio1.wav --quantize int8
     python infer_onnx.py --audio data/audio1.wav --version 1
-    python infer_onnx.py --audio data/audio1.wav --model-dir ./huggingface/gipformer1.5-65M-rnnt
+    python infer_onnx.py --audio data/audio1.wav --model-dir ./huggingface/gipformer1.5-68M-rnnt
     python infer_onnx.py --audio file1.wav file2.wav --num-threads 4
 """
 
@@ -39,8 +39,8 @@ except ImportError:
 # HuggingFace repo per model version. Both repos use the same canonical
 # filenames (encoder.onnx, decoder.onnx, joiner.onnx, tokens.txt, ...).
 REPO_IDS = {
-    "1": "g-group-ai-lab/gipformer-65M-rnnt",
-    "1.5": "g-group-ai-lab/gipformer1.5-65M-rnnt",
+    "1": "g-group-ai-lab/gipformer-68M-rnnt",
+    "1.5": "g-group-ai-lab/gipformer1.5-68M-rnnt",
 }
 DEFAULT_VERSION = "1.5"
 

@@ -1,7 +1,7 @@
 [project]
 name = "gipformer"
 version = "0.1.0"
-description = "Efficient Vietnamese speech recognition — 65M RNN-T (Zipformer Transducer)"
+description = "Efficient Vietnamese speech recognition — 68M RNN-T (Zipformer Transducer)"
 readme = "README.md"
 requires-python = ">=3.9,<3.14"
 license = { text = "MIT" }
@@ -39,7 +39,7 @@ pytorch = [
 ]
 
 [project.urls]
-Homepage = "https://huggingface.co/g-group-ai-lab/gipformer-65M-rnnt"
+Homepage = "https://huggingface.co/g-group-ai-lab/gipformer-68M-rnnt"
 Repository = "https://github.com/ggroup-ai-lab/gipformer"
 
 # --------------------------------------------------------------------------- #
